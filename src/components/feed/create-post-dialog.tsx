@@ -42,6 +42,7 @@ export function CreatePostDialog() {
         return;
       }
       toast.success("Shared with the community");
+      setSubmitting(false);
       setContent("");
       setTopic(null);
       close();

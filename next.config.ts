@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Strict CSP that blocks inline scripts and only allows self + DiceBear + Ably + Vercel
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "api.dicebear.com" },
+    ],
+  },
+  // Strict CSP that allows self + DiceBear + Ably + Vercel + Unsplash
   async headers() {
     return [
       {
@@ -13,7 +19,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' https://api.dicebear.com data:",
+              "img-src 'self' https://api.dicebear.com https://images.unsplash.com data:",
               "font-src 'self'",
               "connect-src 'self' https://realtime.ably.io wss://realtime.ably.io https://vercel.live wss://*.vercel.live",
               "frame-ancestors 'none'",

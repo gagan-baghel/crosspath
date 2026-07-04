@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Topic {
+  STRESS
+  FAMILY
+  RELATIONSHIPS
+  ANXIETY
+  LONELINESS
+  ACADEMIC
+  CAREER
+  FINANCIAL
+  OTHER
+}
+
+enum PostStatus {
+  ACTIVE
+  DELETED
+}
+
+enum InterestStatus {
+  PENDING
+  CHAT_STARTED
+}
+
+enum ChatStatus {
+  ACTIVE
+  ENDED
+}
+
+enum RatingTag {
+  HELPFUL
+  RESPECTFUL
+  GOOD_LISTENER
+  COMFORTABLE
+  NOT_HELPFUL
+  INAPPROPRIATE
+  SPAM
+  RUDE
+}
+
+enum ReportCategory {
+  HARASSMENT
+  ABUSE
+  SPAM
+  SEXUAL_CONTENT
+  THREATS
+  FAKE_ACCOUNT
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  suspended    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  profile          Profile?
+  posts            Post[]
+  interests        Interest[]
+  chatsAsAuthor    Chat[]     @relation("ChatAuthor")
+  chatsAsPartner   Chat[]     @relation("ChatPartner")
+  messages         Message[]
+  ratingsGiven     Rating[]   @relation("Rater")
+  ratingsReceived  Rating[]   @relation("Rated")
+  blocksInitiated  Block[]    @relation("Blocker")
+  blocksReceived   Block[]    @relation("Blocked")
+  reportsMade      Report[]   @relation("Reporter")
+  reportsAgainst   Report[]   @relation("Reported")
+}
+
+model Profile {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @unique @db.ObjectId
+  username      String   @unique
+  avatarUrl     String
+  bio           String   @default("")
+  language      String   @default("English")
+  onboarded     Boolean  @default(false)
+  positiveCount Int      @default(0)
+  negativeCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  authorId      String     @db.ObjectId
+  content       String
+  topic         Topic
+  status        PostStatus @default(ACTIVE)
+  interestCount Int        @default(0)
+  createdAt     DateTime   @default(now())
+
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  interests Interest[]
+  chats     Chat[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([topic, status, createdAt(sort: Desc)])
+  @@index([authorId, status])
+}
+
+model Interest {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String         @db.ObjectId
+  userId    String         @db.ObjectId
+  status    InterestStatus @default(PENDING)
+  createdAt DateTime       @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId])
+}
+
+model Chat {
+  id                 String     @id @default(auto()) @map("_id") @db.ObjectId
+  postId             String     @db.ObjectId
+  authorId           String     @db.ObjectId
+  partnerId          String     @db.ObjectId
+  status             ChatStatus @default(ACTIVE)
+  endedById          String?    @db.ObjectId
+  endedAt            DateTime?
+  lastMessageAt      DateTime   @default(now())
+  lastMessagePreview String     @default("")
+  createdAt          DateTime   @default(now())
+
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author   User      @relation("ChatAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  partner  User      @relation("ChatPartner", fields: [partnerId], references: [id], onDelete: Cascade)
+  messages Message[]
+  ratings  Rating[]
+
+  @@unique([postId, partnerId])
+  @@index([authorId, lastMessageAt(sort: Desc)])
+  @@index([partnerId, lastMessageAt(sort: Desc)])
+}
+
+model Message {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  chatId    String    @db.ObjectId
+  senderId  String    @db.ObjectId
+  body      String
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, createdAt])
+}
+
+model Rating {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  chatId    String      @db.ObjectId
+  raterId   String      @db.ObjectId
+  ratedId   String      @db.ObjectId
+  tags      RatingTag[]
+  feedback  String?
+  createdAt DateTime    @default(now())
+
+  chat  Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  rater User @relation("Rater", fields: [raterId], references: [id], onDelete: Cascade)
+  rated User @relation("Rated", fields: [ratedId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, raterId])
+  @@index([ratedId])
+}
+
+model Block {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  blockerId String   @db.ObjectId
+  blockedId String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+model Report {
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  reporterId String         @db.ObjectId
+  reportedId String         @db.ObjectId
+  chatId     String?        @db.ObjectId
+  postId     String?        @db.ObjectId
+  category   ReportCategory
+  details    String?
+  status     ReportStatus   @default(OPEN)
+  createdAt  DateTime       @default(now())
+
+  reporter User @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported User @relation("Reported", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt(sort: Desc)])
+}

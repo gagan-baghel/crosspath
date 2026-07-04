@@ -3,6 +3,7 @@ import Image from "next/image";
 import { HeartHandshake, ShieldCheck, Ear, MessageCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BrandMark } from "@/components/shell/brand";
 import { cn } from "@/lib/utils";
 
 const img = (id: string, w = 800) =>
@@ -136,9 +137,7 @@ export default function LandingPage() {
         {/* Header */}
         <header className="flex h-20 items-center justify-between gap-4 pr-0 sm:pr-32">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-md bg-foreground text-background">
-              <HeartHandshake className="size-5" />
-            </div>
+            <BrandMark />
             <div className="hidden items-center gap-3 sm:flex">
               <span className="text-sm font-semibold uppercase tracking-wide">Relate</span>
               <span className="h-4 w-px bg-border" />

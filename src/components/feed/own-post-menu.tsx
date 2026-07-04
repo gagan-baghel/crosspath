@@ -32,16 +32,22 @@ export function OwnPostMenu({ postId }: { postId: string }) {
 
   async function onDelete() {
     setDeleting(true);
-    const result = await deletePost(postId);
-    setDeleting(false);
-    setConfirmOpen(false);
-    if (!result.success) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await deletePost(postId);
+      setDeleting(false);
+      setConfirmOpen(false);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Post deleted");
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+      setDeleting(false);
+      setConfirmOpen(false);
     }
-    toast.success("Post deleted");
-    queryClient.invalidateQueries({ queryKey: ["posts"] });
-    router.refresh();
   }
 
   return (

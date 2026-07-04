@@ -23,13 +23,18 @@ export function AccountActions() {
 
   async function onDelete() {
     setDeleting(true);
-    const result = await deleteAccount();
-    if (!result.success) {
-      toast.error(result.error);
+    try {
+      const result = await deleteAccount();
+      if (!result.success) {
+        toast.error(result.error);
+        setDeleting(false);
+        return;
+      }
+      window.location.href = "/";
+    } catch {
+      toast.error("Something went wrong. Please try again.");
       setDeleting(false);
-      return;
     }
-    window.location.href = "/";
   }
 
   return (

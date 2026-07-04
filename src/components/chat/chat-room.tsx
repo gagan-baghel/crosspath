@@ -286,14 +286,19 @@ export function ChatRoom({
     setMessages((prev) => [...prev, temp]);
     requestAnimationFrame(() => scrollToBottom());
 
-    const result = await sendMessage({ chatId, body });
-    if (!result.success) {
+    try {
+      const result = await sendMessage({ chatId, body });
+      if (!result.success) {
+        setMessages((prev) => prev.filter((m) => m.id !== temp.id));
+        toast.error(result.error);
+        return;
+      }
+      const real = result.data!;
+      setMessages((prev) => prev.map((m) => (m.id === temp.id ? real : m)));
+    } catch {
       setMessages((prev) => prev.filter((m) => m.id !== temp.id));
-      toast.error(result.error);
-      return;
+      toast.error("Message failed to send. Please try again.");
     }
-    const real = result.data!;
-    setMessages((prev) => prev.map((m) => (m.id === temp.id ? real : m)));
   }
 
   function setTyping(typing: boolean) {
@@ -302,25 +307,33 @@ export function ChatRoom({
 
   async function onEndChat() {
     setEndConfirmOpen(false);
-    const result = await endChat(chatId);
-    if (!result.success) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await endChat(chatId);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      setEnded(true);
+      if (!rated) setRatingOpen(true);
+    } catch {
+      toast.error("Something went wrong. Please try again.");
     }
-    setEnded(true);
-    if (!rated) setRatingOpen(true);
   }
 
   async function onBlock() {
     setBlockConfirmOpen(false);
-    const result = await blockUser(other.userId);
-    if (!result.success) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await blockUser(other.userId);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`${other.username} blocked`);
+      setEnded(true);
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
     }
-    toast.success(`${other.username} blocked`);
-    setEnded(true);
-    router.refresh();
   }
 
   // Online/Offline presence is only meaningful with Ably. In polling mode

@@ -34,17 +34,22 @@ export function CreatePostDialog() {
   async function onSubmit() {
     if (!topic) return;
     setSubmitting(true);
-    const result = await createPost({ content, topic });
-    setSubmitting(false);
-    if (!result.success) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await createPost({ content, topic });
+      if (!result.success) {
+        toast.error(result.error);
+        setSubmitting(false);
+        return;
+      }
+      toast.success("Shared with the community");
+      setContent("");
+      setTopic(null);
+      close();
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+      setSubmitting(false);
     }
-    toast.success("Shared with the community");
-    setContent("");
-    setTopic(null);
-    close();
-    queryClient.invalidateQueries({ queryKey: ["posts"] });
   }
 
   return (

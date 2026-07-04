@@ -44,22 +44,27 @@ export function ReportDialog({
   async function onSubmit() {
     if (!category) return;
     setSubmitting(true);
-    const result = await reportUser({
-      reportedId,
-      chatId,
-      postId,
-      category,
-      details: details || undefined,
-      alsoBlock,
-    });
-    setSubmitting(false);
-    if (!result.success) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await reportUser({
+        reportedId,
+        chatId,
+        postId,
+        category,
+        details: details || undefined,
+        alsoBlock,
+      });
+      setSubmitting(false);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Report received. Thank you for keeping Relate safe.");
+      onClose();
+      if (alsoBlock) onBlocked?.();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+      setSubmitting(false);
     }
-    toast.success("Report received. Thank you for keeping Relate safe.");
-    onClose();
-    if (alsoBlock) onBlocked?.();
   }
 
   return (

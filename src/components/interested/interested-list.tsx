@@ -32,13 +32,18 @@ export function InterestedList({
 
   async function onStartChat(partnerId: string) {
     setStartingId(partnerId);
-    const result = await startChat(postId, partnerId);
-    setStartingId(null);
-    if (!result.success) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await startChat(postId, partnerId);
+      setStartingId(null);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      router.push(`/chats/${result.data!.chatId}`);
+    } catch {
+      setStartingId(null);
+      toast.error("Something went wrong. Please try again.");
     }
-    router.push(`/chats/${result.data!.chatId}`);
   }
 
   if (items.length === 0) {

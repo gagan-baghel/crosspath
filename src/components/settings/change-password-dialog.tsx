@@ -30,14 +30,18 @@ export function ChangePasswordDialog() {
   } = useForm<ChangePasswordInput>({ resolver: zodResolver(changePasswordSchema) });
 
   async function onSubmit(values: ChangePasswordInput) {
-    const result = await changePassword(values);
-    if (!result.success) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await changePassword(values);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Password changed");
+      reset();
+      setOpen(false);
+    } catch {
+      toast.error("Something went wrong. Please try again.");
     }
-    toast.success("Password changed");
-    reset();
-    setOpen(false);
   }
 
   return (

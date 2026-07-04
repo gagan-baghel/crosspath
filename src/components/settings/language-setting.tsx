@@ -24,13 +24,17 @@ export function LanguageSetting({
   const router = useRouter();
 
   async function onChange(value: string) {
-    const result = await updateProfile({ avatarUrl, bio, language: value });
-    if (!result.success) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await updateProfile({ avatarUrl, bio, language: value });
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Language updated");
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
     }
-    toast.success("Language updated");
-    router.refresh();
   }
 
   return (

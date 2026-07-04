@@ -36,19 +36,24 @@ export function OnboardingForm({ usernameCandidates }: { usernameCandidates: str
 
   async function onSubmit() {
     setSubmitting(true);
-    const result = await completeOnboarding({
-      username,
-      avatarUrl: avatars[avatarIndex],
-      bio,
-      language,
-    });
-    if (!result.success) {
-      toast.error(result.error);
+    try {
+      const result = await completeOnboarding({
+        username,
+        avatarUrl: avatars[avatarIndex],
+        bio,
+        language,
+      });
+      if (!result.success) {
+        toast.error(result.error);
+        setSubmitting(false);
+        return;
+      }
+      router.push("/feed");
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
       setSubmitting(false);
-      return;
     }
-    router.push("/feed");
-    router.refresh();
   }
 
   return (

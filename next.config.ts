@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Strict CSP that blocks inline scripts and only allows self + DiceBear + Ably
+  // Strict CSP that blocks inline scripts and only allows self + DiceBear + Ably + Vercel
   async headers() {
     return [
       {
@@ -11,11 +11,11 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js requires unsafe-inline for its own scripts in dev; tighten in production if using strict CSP nonces
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' https://api.dicebear.com data:",
               "font-src 'self'",
-              "connect-src 'self' https://realtime.ably.io wss://realtime.ably.io",
+              "connect-src 'self' https://realtime.ably.io wss://realtime.ably.io https://vercel.live wss://*.vercel.live",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

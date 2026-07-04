@@ -33,15 +33,21 @@ export function InterestedButton({
     const next = !interested;
     setInterested(next);
     setPending(true);
-    const result = await toggleInterest(postId);
-    setPending(false);
-    if (!result.success) {
+    try {
+      const result = await toggleInterest(postId);
+      setPending(false);
+      if (!result.success) {
+        setInterested(!next);
+        toast.error(result.error);
+        return;
+      }
+      if (next) {
+        toast.success("The author will see you're interested");
+      }
+    } catch {
       setInterested(!next);
-      toast.error(result.error);
-      return;
-    }
-    if (next) {
-      toast.success("The author will see you're interested");
+      toast.error("Something went wrong. Please try again.");
+      setPending(false);
     }
   }
 

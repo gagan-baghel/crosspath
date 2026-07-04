@@ -18,14 +18,19 @@ export function BlockedUsers({ profiles }: { profiles: PublicProfile[] }) {
 
   async function onUnblock(userId: string) {
     setPendingId(userId);
-    const result = await unblockUser(userId);
-    setPendingId(null);
-    if (!result.success) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await unblockUser(userId);
+      setPendingId(null);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("User unblocked");
+      router.refresh();
+    } catch {
+      setPendingId(null);
+      toast.error("Something went wrong. Please try again.");
     }
-    toast.success("User unblocked");
-    router.refresh();
   }
 
   return (

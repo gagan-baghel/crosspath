@@ -50,15 +50,20 @@ export function EditProfileSheet(props: {
 
   async function onSave() {
     setSubmitting(true);
-    const result = await updateProfile({ avatarUrl, bio, language });
-    setSubmitting(false);
-    if (!result.success) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await updateProfile({ avatarUrl, bio, language });
+      setSubmitting(false);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Profile updated");
+      setOpen(false);
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+      setSubmitting(false);
     }
-    toast.success("Profile updated");
-    setOpen(false);
-    router.refresh();
   }
 
   return (

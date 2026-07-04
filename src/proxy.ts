@@ -16,7 +16,15 @@ export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC_PATHS.includes(pathname);
 
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+  // On HTTPS (production) Auth.js prefixes the session cookie with
+  // `__Secure-` and uses that name as the JWT decryption salt. getToken
+  // defaults secureCookie to false, so without this flag it looks for the
+  // wrong cookie in production and every logged-in user appears logged out.
+  const secureCookie =
+    req.nextUrl.protocol === "https:" ||
+    req.headers.get("x-forwarded-proto") === "https";
+
+  const token = await getToken({ req, secret: process.env.AUTH_SECRET, secureCookie });
   const isLoggedIn = !!token;
 
   // Signed-in users skip the public pages.

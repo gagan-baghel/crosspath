@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
@@ -13,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function SignupForm() {
-  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -23,23 +21,41 @@ export function SignupForm() {
 
   async function onSubmit(values: SignupInput) {
     setServerError(null);
-    const result = await signup(values);
-    if (!result.success) {
-      setServerError(result.error);
+
+    let created = false;
+    try {
+      const result = await signup(values);
+      if (!result.success) {
+        setServerError(result.error);
+        return;
+      }
+      created = true;
+    } catch {
+      setServerError(
+        "We couldn't create your account right now. Please refresh the page and try again."
+      );
       return;
     }
-    // Auto sign-in, then onboarding.
-    const res = await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      redirect: false,
-    });
-    if (res?.error) {
-      router.push("/login");
-      return;
+
+    try {
+      // Auto sign-in, then onboarding.
+      const res = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        redirect: false,
+      });
+      if (res?.error) throw new Error(res.error);
+      // Full navigation so the fresh session cookie is applied everywhere.
+      window.location.assign("/onboarding");
+    } catch {
+      // Account exists but auto sign-in failed — send them to login with
+      // a clear notice instead of leaving them stranded.
+      if (created) {
+        window.location.assign("/login?created=1");
+        return;
+      }
+      setServerError("Something went wrong. Please refresh the page and try again.");
     }
-    router.push("/onboarding");
-    router.refresh();
   }
 
   return (
@@ -81,7 +97,7 @@ export function SignupForm() {
       {serverError && <p className="text-sm text-destructive">{serverError}</p>}
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-        Create account
+        {isSubmitting ? "Creating account…" : "Create account"}
       </Button>
     </form>
   );

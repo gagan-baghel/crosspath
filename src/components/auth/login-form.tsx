@@ -17,6 +17,21 @@ function safeCallbackUrl(raw: string | null): string {
   return "/feed";
 }
 
+function getLoginErrorMessage(error: string | undefined): string {
+  if (!error) return "Something went wrong. Please try again.";
+  if (error === "InvalidCredentials") {
+    return "Invalid email or password. Please check and try again.";
+  }
+  if (error.startsWith("RateLimit:")) {
+    const seconds = error.split(":")[1];
+    return `Too many login attempts. Please try again in ${seconds}s.`;
+  }
+  if (error === "AccountSuspended") {
+    return "This account has been suspended. Contact support if you believe this is a mistake.";
+  }
+  return "Something went wrong on our side. Please refresh the page and try again.";
+}
+
 export function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
@@ -38,7 +53,7 @@ export function LoginForm() {
         redirect: false,
       });
       if (res?.error) {
-        setServerError("Invalid email or password. Please check and try again.");
+        setServerError(getLoginErrorMessage(res.error));
         return;
       }
       // Full navigation (not client routing) so the new session cookie is
@@ -86,7 +101,11 @@ export function LoginForm() {
         />
         {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
       </div>
-      {serverError && <p className="text-sm text-destructive">{serverError}</p>}
+      {serverError && (
+        <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {serverError}
+        </p>
+      )}
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting && <Loader2 className="size-4 animate-spin" />}
         {isSubmitting ? "Signing in…" : "Sign in"}

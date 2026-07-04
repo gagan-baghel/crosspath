@@ -11,6 +11,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+function getSignupErrorMessage(error: string): string {
+  if (error.includes("Rate limit") || error.includes("Too many")) {
+    return error;
+  }
+  if (error.includes("Unable to create account")) {
+    return "An account with this email already exists. Try signing in instead.";
+  }
+  return error;
+}
+
+function getSigninErrorMessage(error: string | undefined): string {
+  if (!error) return "Auto sign-in failed. Please sign in manually.";
+  if (error.startsWith("RateLimit:")) {
+    const seconds = error.split(":")[1];
+    return `Account created, but auto sign-in is rate-limited. Please sign in manually in ${seconds}s.`;
+  }
+  return "Account created, but auto sign-in failed. Please sign in manually.";
+}
+
 export function SignupForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const {
@@ -26,7 +45,7 @@ export function SignupForm() {
     try {
       const result = await signup(values);
       if (!result.success) {
-        setServerError(result.error);
+        setServerError(getSignupErrorMessage(result.error));
         return;
       }
       created = true;
@@ -44,7 +63,10 @@ export function SignupForm() {
         password: values.password,
         redirect: false,
       });
-      if (res?.error) throw new Error(res.error);
+      if (res?.error) {
+        setServerError(getSigninErrorMessage(res.error));
+        return;
+      }
       // Full navigation so the fresh session cookie is applied everywhere.
       window.location.assign("/onboarding");
     } catch {
@@ -94,7 +116,11 @@ export function SignupForm() {
           <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
         )}
       </div>
-      {serverError && <p className="text-sm text-destructive">{serverError}</p>}
+      {serverError && (
+        <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {serverError}
+        </p>
+      )}
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting && <Loader2 className="size-4 animate-spin" />}
         {isSubmitting ? "Creating account…" : "Create account"}

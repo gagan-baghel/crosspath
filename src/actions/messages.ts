@@ -1,16 +1,23 @@
 "use server";
 
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { isBlockedBetween } from "@/lib/blocks";
 import { isObjectId } from "@/lib/validation";
 import { publishToChat } from "@/lib/ably";
 import { sendMessageSchema } from "@/schemas/message";
+import { rateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { sanitizeText, validateMessageBody } from "@/lib/sanitize";
 import type { ChatMessage } from "@/types/chat";
 
 type ActionResult<T = undefined> =
   | { success: true; data?: T }
   | { success: false; error: string };
+
+/** Per-IP rate limit: 30 messages per minute. */
+const MSG_IP_LIMIT = 30;
+const MSG_IP_WINDOW_MS = 60_000;
 
 export async function sendMessage(input: unknown): Promise<ActionResult<ChatMessage>> {
   const session = await auth();
@@ -21,7 +28,18 @@ export async function sendMessage(input: unknown): Promise<ActionResult<ChatMess
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
-  const { chatId, body } = parsed.data;
+  const { chatId, body: rawBody } = parsed.data;
+
+  // In-memory per-IP rate limit (defence against spam bots).
+  const h = await headers();
+  const ip = getClientIdentifier(h, "unknown");
+  const ipLimit = rateLimit(`msg:${ip}`, MSG_IP_LIMIT, MSG_IP_WINDOW_MS);
+  if (!ipLimit.allowed) {
+    return {
+      success: false,
+      error: `You're sending messages too quickly. Try again in ${ipLimit.retryAfter}s.`,
+    };
+  }
 
   const chat = await prisma.chat.findUnique({
     where: { id: chatId },
@@ -39,13 +57,20 @@ export async function sendMessage(input: unknown): Promise<ActionResult<ChatMess
     return { success: false, error: "You can't message this user" };
   }
 
-  // Light rate limit: at most ~1 message per second.
+  // Light rate limit: at most ~1 message per second per chat.
   const oneSecondAgo = new Date(Date.now() - 1000);
   const recent = await prisma.message.count({
     where: { chatId, senderId, createdAt: { gte: oneSecondAgo } },
   });
   if (recent > 0) {
     return { success: false, error: "You're sending messages too quickly" };
+  }
+
+  // Sanitize and validate body.
+  const body = sanitizeText(rawBody);
+  const validationError = validateMessageBody(body);
+  if (validationError) {
+    return { success: false, error: validationError };
   }
 
   // readAt is set to null explicitly: Prisma's MongoDB connector does not

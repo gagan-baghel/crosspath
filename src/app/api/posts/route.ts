@@ -4,9 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { blockedUserIds } from "@/lib/blocks";
 import { topicValues, type TopicValue } from "@/schemas/post";
 import { escapeRegex, isObjectId, SEARCH_MAX_LEN } from "@/lib/validation";
+import { rateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import type { FeedPage, FeedPost } from "@/types/feed";
 
 const PAGE_SIZE = 20;
+
+/** Per-IP rate limit: 120 feed requests per minute. */
+const FEED_IP_LIMIT = 120;
+const FEED_IP_WINDOW_MS = 60_000;
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -14,6 +19,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const viewerId = session.user.id;
+
+  // Rate-limit feed fetches.
+  const ip = getClientIdentifier(req.headers, "unknown");
+  const limit = rateLimit(`feed:${ip}`, FEED_IP_LIMIT, FEED_IP_WINDOW_MS);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: `Rate limit exceeded. Retry after ${limit.retryAfter}s.` },
+      { status: 429 }
+    );
+  }
 
   const { searchParams } = req.nextUrl;
   // Ignore a malformed cursor instead of letting Prisma throw a 500.

@@ -24,10 +24,18 @@ export async function completeOnboarding(input: unknown): Promise<ActionResult> 
 
   let { username } = parsed.data;
   // Regenerate on the rare collision instead of failing onboarding.
+  let found = false;
   for (let attempt = 0; attempt < 5; attempt++) {
     const taken = await prisma.profile.findUnique({ where: { username } });
-    if (!taken) break;
+    if (!taken) {
+      found = true;
+      break;
+    }
     username = generateUsername();
+  }
+
+  if (!found) {
+    return { success: false, error: "Unable to generate a unique username. Please try again." };
   }
 
   await prisma.profile.upsert({

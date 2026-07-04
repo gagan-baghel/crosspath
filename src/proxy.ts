@@ -17,14 +17,37 @@ export default async function proxy(req: NextRequest) {
   const isPublic = PUBLIC_PATHS.includes(pathname);
 
   // On HTTPS (production) Auth.js prefixes the session cookie with
-  // `__Secure-` and uses that name as the JWT decryption salt. getToken
-  // defaults secureCookie to false, so without this flag it looks for the
-  // wrong cookie in production and every logged-in user appears logged out.
+  // `__Secure-` and uses `authjs.session-token` as the base name (v5).
+  // `getToken` defaults to the v4 name `next-auth.session-token`, so
+  // without an explicit cookieName it never finds the token in production.
   const secureCookie =
     req.nextUrl.protocol === "https:" ||
     req.headers.get("x-forwarded-proto") === "https";
 
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET, secureCookie });
+  const v5CookieName = secureCookie
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
+  const v4CookieName = secureCookie
+    ? "__Secure-next-auth.session-token"
+    : "next-auth.session-token";
+
+  // Try v5 name first, then fall back to v4 for compatibility.
+  let token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET,
+    secureCookie,
+    cookieName: v5CookieName,
+  });
+
+  if (!token) {
+    token = await getToken({
+      req,
+      secret: process.env.AUTH_SECRET,
+      secureCookie,
+      cookieName: v4CookieName,
+    });
+  }
+
   const isLoggedIn = !!token;
 
   // Signed-in users skip the public pages.
@@ -43,5 +66,7 @@ export default async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|ico|webp)).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|ico|webp)).*)",
+  ],
 };

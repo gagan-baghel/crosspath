@@ -1,13 +1,29 @@
 "use server";
 
+import { headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signupSchema, changePasswordSchema } from "@/schemas/auth";
 import { auth } from "@/auth";
+import { rateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
+/** Rate limit: 3 signups per IP per 15 minutes. */
+const SIGNUP_LIMIT = 3;
+const SIGNUP_WINDOW_MS = 15 * 60_000;
+
 export async function signup(input: unknown): Promise<ActionResult> {
+  const h = await headers();
+  const ip = getClientIdentifier(h, "unknown");
+  const limit = rateLimit(`signup:${ip}`, SIGNUP_LIMIT, SIGNUP_WINDOW_MS);
+  if (!limit.allowed) {
+    return {
+      success: false,
+      error: `Too many sign-up attempts. Please try again in ${limit.retryAfter}s.`,
+    };
+  }
+
   const parsed = signupSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

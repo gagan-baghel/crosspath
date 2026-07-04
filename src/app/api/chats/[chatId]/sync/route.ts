@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isObjectId } from "@/lib/validation";
+import { rateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import type { ChatMessage } from "@/types/chat";
+
+/** Per-IP rate limit: 60 sync polls per minute (more than enough for 2.5s polling). */
+const SYNC_IP_LIMIT = 60;
+const SYNC_IP_WINDOW_MS = 60_000;
 
 /**
  * Polling fallback used when Ably isn't configured. Returns everything the
@@ -26,6 +31,16 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   const viewerId = session.user.id;
+
+  // Rate-limit polling to prevent accidental or intentional abuse.
+  const ip = getClientIdentifier(req.headers, "unknown");
+  const limit = rateLimit(`sync:${ip}:${chatId}`, SYNC_IP_LIMIT, SYNC_IP_WINDOW_MS);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: `Rate limit exceeded. Retry after ${limit.retryAfter}s.` },
+      { status: 429 }
+    );
+  }
 
   const chat = await prisma.chat.findUnique({
     where: { id: chatId },

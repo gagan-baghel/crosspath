@@ -27,11 +27,18 @@ export default async function InterestedPage({
   // Author-only: anyone else gets a 404, not a permission error.
   if (!post || post.authorId !== viewerId) notFound();
 
-  const interests = await prisma.interest.findMany({
-    where: { postId },
-    orderBy: { createdAt: "desc" },
-    select: { userId: true, status: true, createdAt: true },
-  });
+  const [interests, chats] = await Promise.all([
+    prisma.interest.findMany({
+      where: { postId },
+      orderBy: { createdAt: "desc" },
+      select: { userId: true, status: true, createdAt: true },
+    }),
+    prisma.chat.findMany({
+      where: { postId },
+      select: { id: true, partnerId: true },
+    }),
+  ]);
+  const chatMap = new Map(chats.map((c) => [c.partnerId, c.id]));
 
   const profiles = await prisma.profile.findMany({
     where: { userId: { in: interests.map((i) => i.userId) } },
@@ -51,7 +58,7 @@ export default async function InterestedPage({
     .filter((i) => profileMap.has(i.userId))
     .map((i) => ({
       profile: profileMap.get(i.userId)!,
-      chatStarted: i.status === "CHAT_STARTED",
+      chatId: chatMap.get(i.userId) ?? null,
       interestedAt: i.createdAt.toISOString(),
     }));
 

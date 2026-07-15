@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { formatDistanceToNowStrict } from "date-fns";
 import { Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -15,7 +16,8 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export type InterestedItem = {
   profile: PublicProfile;
-  chatStarted: boolean;
+  /** Set once the author has started a chat with this person. */
+  chatId: string | null;
   interestedAt: string;
 };
 
@@ -61,7 +63,7 @@ export function InterestedList({
   return (
     <>
       <ul className="flex flex-col gap-3">
-        {items.map(({ profile, chatStarted, interestedAt }) => (
+        {items.map(({ profile, chatId, interestedAt }) => (
           <li key={profile.userId}>
             <Card className="rounded-2xl shadow-sm">
               <CardContent className="flex items-center gap-3 py-4">
@@ -96,9 +98,12 @@ export function InterestedList({
                   </div>
                 </button>
 
-                {chatStarted ? (
-                  <Button variant="secondary" size="sm" className="shrink-0 rounded-full" disabled>
-                    Chat started
+                {chatId ? (
+                  <Button size="sm" className="shrink-0 rounded-full" asChild>
+                    <Link href={`/chats/${chatId}`}>
+                      <MessageCircle className="size-4" />
+                      Open chat
+                    </Link>
                   </Button>
                 ) : (
                   <Button
@@ -125,19 +130,31 @@ export function InterestedList({
         profile={preview}
         onOpenChange={(open) => !open && setPreview(null)}
         action={
-          preview && !items.find((i) => i.profile.userId === preview.userId)?.chatStarted ? (
-            <Button
-              className="w-full rounded-full"
-              disabled={startingId === preview.userId}
-              onClick={() => onStartChat(preview.userId)}
-            >
-              {startingId === preview.userId ? (
-                <Loader2 className="size-4 animate-spin" />
+          preview ? (
+            (() => {
+              const chatId = items.find((i) => i.profile.userId === preview.userId)?.chatId;
+              return chatId ? (
+                <Button className="w-full rounded-full" asChild>
+                  <Link href={`/chats/${chatId}`}>
+                    <MessageCircle className="size-4" />
+                    Open chat
+                  </Link>
+                </Button>
               ) : (
-                <MessageCircle className="size-4" />
-              )}
-              Start chat
-            </Button>
+                <Button
+                  className="w-full rounded-full"
+                  disabled={startingId === preview.userId}
+                  onClick={() => onStartChat(preview.userId)}
+                >
+                  {startingId === preview.userId ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <MessageCircle className="size-4" />
+                  )}
+                  Start chat
+                </Button>
+              );
+            })()
           ) : null
         }
       />

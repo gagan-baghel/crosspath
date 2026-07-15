@@ -54,11 +54,19 @@ export async function createPost(input: unknown): Promise<ActionResult<{ id: str
     return { success: false, error: validationError };
   }
 
+  const otherTopic = parsed.data.topics.includes("OTHER")
+    ? sanitizeText(parsed.data.otherTopic ?? "")
+    : undefined;
+  if (parsed.data.topics.includes("OTHER") && !otherTopic) {
+    return { success: false, error: 'Tell us what "Other" means here' };
+  }
+
   const post = await prisma.post.create({
     data: {
       authorId: session.user.id,
       content,
       topics: parsed.data.topics,
+      otherTopic,
     },
   });
 

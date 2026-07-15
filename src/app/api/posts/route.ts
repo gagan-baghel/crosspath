@@ -64,6 +64,7 @@ export async function GET(req: NextRequest) {
       authorId: true,
       content: true,
       topics: true,
+      otherTopic: true,
       createdAt: true,
       interestCount: true,
       interests: {
@@ -105,6 +106,7 @@ export async function GET(req: NextRequest) {
       id: p.id,
       content: p.content,
       topics: p.topics,
+      otherTopic: p.otherTopic ?? null,
       createdAt: p.createdAt.toISOString(),
       interestCount: p.interestCount,
       viewerInterested: p.interests.length > 0,

@@ -5,9 +5,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createPost } from "@/actions/posts";
-import { POST_CONTENT_MAX, TOPICS, type TopicValue } from "@/schemas/post";
+import { OTHER_TOPIC_MAX, POST_CONTENT_MAX, TOPICS, type TopicValue } from "@/schemas/post";
 import { useCreatePost } from "@/stores/create-post";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -25,22 +26,32 @@ export function CreatePostDialog() {
   const { isOpen, close } = useCreatePost();
   const queryClient = useQueryClient();
   const [topics, setTopics] = useState<TopicValue[]>([]);
+  const [otherTopic, setOtherTopic] = useState("");
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const valid = topics.length > 0 && content.trim().length >= CONTENT_MIN;
+  const hasOther = topics.includes("OTHER");
+  const valid =
+    topics.length > 0 &&
+    content.trim().length >= CONTENT_MIN &&
+    (!hasOther || otherTopic.trim().length > 0);
 
   function toggleTopic(value: TopicValue) {
     setTopics((prev) =>
       prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
     );
+    if (value === "OTHER") setOtherTopic("");
   }
 
   async function onSubmit() {
-    if (topics.length === 0) return;
+    if (!valid) return;
     setSubmitting(true);
     try {
-      const result = await createPost({ content, topics });
+      const result = await createPost({
+        content,
+        topics,
+        otherTopic: hasOther ? otherTopic.trim() : undefined,
+      });
       if (!result.success) {
         toast.error(result.error);
         setSubmitting(false);
@@ -50,6 +61,7 @@ export function CreatePostDialog() {
       setSubmitting(false);
       setContent("");
       setTopics([]);
+      setOtherTopic("");
       close();
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     } catch {
@@ -87,6 +99,18 @@ export function CreatePostDialog() {
             );
           })}
         </div>
+
+        {hasOther && (
+          <div className="flex flex-col gap-1.5">
+            <Input
+              value={otherTopic}
+              maxLength={OTHER_TOPIC_MAX}
+              onChange={(e) => setOtherTopic(e.target.value)}
+              placeholder="What's the topic? (e.g. Health, Grief)"
+              autoFocus
+            />
+          </div>
+        )}
 
         <div className="flex flex-1 flex-col gap-1.5 sm:flex-none">
           <Textarea

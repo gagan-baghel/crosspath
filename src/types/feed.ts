@@ -4,6 +4,7 @@ export type FeedPost = {
   id: string;
   content: string;
   topics: string[];
+  otherTopic: string | null;
   createdAt: string;
   interestCount: number;
   viewerInterested: boolean;

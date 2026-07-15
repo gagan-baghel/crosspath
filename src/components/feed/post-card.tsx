@@ -7,7 +7,7 @@ import { formatDistanceToNowStrict } from "date-fns";
 import { MessageCircle, Users } from "lucide-react";
 import { OwnPostMenu } from "@/components/feed/own-post-menu";
 import type { FeedPost } from "@/types/feed";
-import { topicLabel } from "@/schemas/post";
+import { displayTopicLabels } from "@/schemas/post";
 import { TrustBadge } from "@/components/profile/trust-badge";
 import { InterestedButton } from "@/components/feed/interested-button";
 import { Badge } from "@/components/ui/badge";
@@ -46,9 +46,9 @@ export function PostCard({ post, detail = false }: { post: FeedPost; detail?: bo
             </span>
           </div>
           <div className="ml-auto flex shrink-0 max-w-[45%] flex-wrap justify-end gap-1">
-            {post.topics.map((t) => (
-              <Badge key={t} variant="outline" className="rounded-full font-normal">
-                {topicLabel(t)}
+            {displayTopicLabels(post.topics, post.otherTopic).map((label) => (
+              <Badge key={label} variant="outline" className="rounded-full font-normal">
+                {label}
               </Badge>
             ))}
           </div>

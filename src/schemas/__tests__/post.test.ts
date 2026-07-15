@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { createPostSchema, POST_CONTENT_MAX, topicLabel, TOPICS, topicValues } from "../post";
+import {
+  createPostSchema,
+  displayTopicLabels,
+  OTHER_TOPIC_MAX,
+  POST_CONTENT_MAX,
+  topicLabel,
+  TOPICS,
+  topicValues,
+} from "../post";
 
 describe("createPostSchema", () => {
   it("accepts valid content and topics", () => {
@@ -66,9 +74,56 @@ describe("createPostSchema", () => {
       const result = createPostSchema.safeParse({
         content: "This is a valid post with enough characters.",
         topics: [topic],
+        otherTopic: topic === "OTHER" ? "Health" : undefined,
       });
       expect(result.success).toBe(true);
     }
+  });
+
+  it("rejects OTHER without an otherTopic label", () => {
+    const result = createPostSchema.safeParse({
+      content: "This is a valid post with enough characters.",
+      topics: ["OTHER"],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects OTHER with a blank otherTopic label", () => {
+    const result = createPostSchema.safeParse({
+      content: "This is a valid post with enough characters.",
+      topics: ["OTHER"],
+      otherTopic: "   ",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts OTHER with a trimmed otherTopic label", () => {
+    const result = createPostSchema.safeParse({
+      content: "This is a valid post with enough characters.",
+      topics: ["OTHER"],
+      otherTopic: "  Health  ",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.otherTopic).toBe("Health");
+    }
+  });
+
+  it("rejects an otherTopic label over the max length", () => {
+    const result = createPostSchema.safeParse({
+      content: "This is a valid post with enough characters.",
+      topics: ["OTHER"],
+      otherTopic: "a".repeat(OTHER_TOPIC_MAX + 1),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("ignores otherTopic when OTHER isn't selected", () => {
+    const result = createPostSchema.safeParse({
+      content: "This is a valid post with enough characters.",
+      topics: ["STRESS"],
+    });
+    expect(result.success).toBe(true);
   });
 
   it("trims content (handled by caller after parse)", () => {
@@ -92,6 +147,25 @@ describe("topicLabel", () => {
 
   it("returns the input for unknown topics", () => {
     expect(topicLabel("UNKNOWN")).toBe("UNKNOWN");
+  });
+});
+
+describe("displayTopicLabels", () => {
+  it("returns generic labels when there's no otherTopic", () => {
+    expect(displayTopicLabels(["STRESS", "OTHER"])).toEqual(["Stress", "Other"]);
+  });
+
+  it("swaps the OTHER label for the custom otherTopic text", () => {
+    expect(displayTopicLabels(["STRESS", "OTHER"], "Health")).toEqual(["Stress", "Health"]);
+  });
+
+  it("falls back to the generic label when otherTopic is null or empty", () => {
+    expect(displayTopicLabels(["OTHER"], null)).toEqual(["Other"]);
+    expect(displayTopicLabels(["OTHER"], "")).toEqual(["Other"]);
+  });
+
+  it("doesn't touch non-OTHER topics even when otherTopic is set", () => {
+    expect(displayTopicLabels(["STRESS", "FAMILY"], "Health")).toEqual(["Stress", "Family"]);
   });
 });
 

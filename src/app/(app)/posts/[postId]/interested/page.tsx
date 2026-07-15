@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { requireUserId } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { topicLabel } from "@/schemas/post";
+import { displayTopicLabels } from "@/schemas/post";
 import { InterestedList } from "@/components/interested/interested-list";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,14 @@ export default async function InterestedPage({
 
   const post = await prisma.post.findUnique({
     where: { id: postId },
-    select: { id: true, authorId: true, content: true, topics: true, status: true },
+    select: {
+      id: true,
+      authorId: true,
+      content: true,
+      topics: true,
+      otherTopic: true,
+      status: true,
+    },
   });
   // Author-only: anyone else gets a 404, not a permission error.
   if (!post || post.authorId !== viewerId) notFound();
@@ -79,9 +86,9 @@ export default async function InterestedPage({
         <Card className="rounded-2xl border-dashed shadow-none">
           <CardContent className="flex flex-col gap-2 pt-4">
             <div className="flex flex-wrap gap-1.5">
-              {post.topics.map((t) => (
-                <Badge key={t} variant="outline" className="w-fit rounded-full font-normal">
-                  {topicLabel(t)}
+              {displayTopicLabels(post.topics, post.otherTopic).map((label) => (
+                <Badge key={label} variant="outline" className="w-fit rounded-full font-normal">
+                  {label}
                 </Badge>
               ))}
             </div>

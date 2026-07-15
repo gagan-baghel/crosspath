@@ -109,6 +109,8 @@ model Post {
   authorId      String     @db.ObjectId
   content       String
   topics        Topic[]
+  /** User-supplied label shown instead of the generic "Other" badge when OTHER is one of the topics. */
+  otherTopic    String?
   status        PostStatus @default(ACTIVE)
   interestCount Int        @default(0)
   createdAt     DateTime   @default(now())

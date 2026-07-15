@@ -22,7 +22,7 @@ export default async function InterestedPage({
 
   const post = await prisma.post.findUnique({
     where: { id: postId },
-    select: { id: true, authorId: true, content: true, topic: true, status: true },
+    select: { id: true, authorId: true, content: true, topics: true, status: true },
   });
   // Author-only: anyone else gets a 404, not a permission error.
   if (!post || post.authorId !== viewerId) notFound();
@@ -71,9 +71,13 @@ export default async function InterestedPage({
       <div className="flex flex-col gap-4 p-4">
         <Card className="rounded-2xl border-dashed shadow-none">
           <CardContent className="flex flex-col gap-2 pt-4">
-            <Badge variant="outline" className="w-fit rounded-full font-normal">
-              {topicLabel(post.topic)}
-            </Badge>
+            <div className="flex flex-wrap gap-1.5">
+              {post.topics.map((t) => (
+                <Badge key={t} variant="outline" className="w-fit rounded-full font-normal">
+                  {topicLabel(t)}
+                </Badge>
+              ))}
+            </div>
             <p className="line-clamp-3 text-sm text-muted-foreground">{post.content}</p>
           </CardContent>
         </Card>

@@ -42,7 +42,9 @@ export function InterestedButton({
         return;
       }
       if (next) {
-        toast.success("The author will see you're interested");
+        toast.success("The author will see you're interested", {
+          description: "If they pick you, a private chat opens right here.",
+        });
       }
     } catch {
       setInterested(!next);

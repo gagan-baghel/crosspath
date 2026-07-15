@@ -58,7 +58,7 @@ export async function createPost(input: unknown): Promise<ActionResult<{ id: str
     data: {
       authorId: session.user.id,
       content,
-      topic: parsed.data.topic,
+      topics: parsed.data.topics,
     },
   });
 

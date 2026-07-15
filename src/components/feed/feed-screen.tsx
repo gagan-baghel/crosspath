@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-export function FeedScreen() {
+export function FeedScreen({ suggestions }: { suggestions?: React.ReactNode }) {
   const [topic, setTopic] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState("");
   const q = useDebouncedValue(search, 350);
@@ -55,7 +55,8 @@ export function FeedScreen() {
         </div>
       </header>
 
-      <div className="p-4">
+      <div className="flex flex-col gap-4 p-4">
+        {suggestions}
         <FeedList
           topic={topic}
           q={q || undefined}

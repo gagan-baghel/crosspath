@@ -2,7 +2,7 @@
 
 An anonymous peer-support app: **share a problem → find people who relate → choose who to talk to → have a private conversation → build trust through feedback.**
 
-Users post what they're going through under a generated username. Anyone who relates taps **Interested** — but only the post's author sees who raised their hand, and only the author can open a private one-to-one chat. After a chat ends, both people rate the interaction, which feeds a hidden trust score shown publicly only as a label (*New / Trusted / Highly Trusted*).
+Users post what they're going through under an anonymous username they choose (with generated suggestions). Anyone who relates taps **Interested** — but only the post's author sees who raised their hand, and only the author can open a private one-to-one chat. After a chat ends, both people rate the interaction, which feeds a hidden trust score shown publicly only as a label (*New / Trusted / Highly Trusted*).
 
 ## Tech stack
 

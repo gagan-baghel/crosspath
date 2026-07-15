@@ -14,8 +14,8 @@ export default async function OnboardingPage() {
   const profile = await prisma.profile.findUnique({ where: { userId } });
   if (profile?.onboarded) redirect("/feed");
 
-  // Three server-generated username candidates; the client can cycle them.
-  const usernames = [generateUsername(), generateUsername(), generateUsername()];
+  // A starting suggestion; the user can type their own or roll new ones client-side.
+  const initialUsername = generateUsername();
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-6 px-4 py-10">
@@ -26,7 +26,7 @@ export default async function OnboardingPage() {
           Set up your anonymous identity. This is all anyone will ever see.
         </p>
       </div>
-      <OnboardingForm usernameCandidates={usernames} />
+      <OnboardingForm initialUsername={initialUsername} />
     </main>
   );
 }

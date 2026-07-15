@@ -3,10 +3,12 @@ import type { PublicProfile } from "@/lib/public-profile";
 export type FeedPost = {
   id: string;
   content: string;
-  topic: string;
+  topics: string[];
   createdAt: string;
   interestCount: number;
   viewerInterested: boolean;
+  /** Chat opened from the viewer's interest in this post, if any. */
+  viewerChatId: string | null;
   isOwn: boolean;
   author: Pick<
     PublicProfile,

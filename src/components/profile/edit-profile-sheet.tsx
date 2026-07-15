@@ -7,7 +7,8 @@ import { Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfile } from "@/actions/profile";
 import { avatarVariants } from "@/lib/avatars";
-import { LANGUAGES } from "@/schemas/profile";
+import { LANGUAGES, usernameSchema } from "@/schemas/profile";
+import { UsernameField, useUsernameAvailability } from "@/components/profile/username-field";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -39,9 +40,13 @@ export function EditProfileSheet(props: {
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [username, setUsername] = useState(props.username);
   const [bio, setBio] = useState(props.bio);
   const [language, setLanguage] = useState(props.language);
   const [submitting, setSubmitting] = useState(false);
+
+  const { status, message } = useUsernameAvailability(username, props.username);
+  const validUsername = usernameSchema.safeParse(username.trim()).success;
 
   const avatars = useMemo(() => avatarVariants(props.username), [props.username]);
   const [avatarUrl, setAvatarUrl] = useState(
@@ -51,7 +56,12 @@ export function EditProfileSheet(props: {
   async function onSave() {
     setSubmitting(true);
     try {
-      const result = await updateProfile({ avatarUrl, bio, language });
+      const result = await updateProfile({
+        username: username.trim(),
+        avatarUrl,
+        bio,
+        language,
+      });
       setSubmitting(false);
       if (!result.success) {
         toast.error(result.error);
@@ -78,11 +88,22 @@ export function EditProfileSheet(props: {
         <SheetHeader>
           <SheetTitle>Edit profile</SheetTitle>
           <SheetDescription>
-            Your username is permanent to keep identities consistent.
+            This is all anyone ever sees of you — keep it anonymous.
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-col gap-5 px-4 pb-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="edit-username">Username</Label>
+            <UsernameField
+              id="edit-username"
+              value={username}
+              onChange={setUsername}
+              status={status}
+              message={message}
+            />
+          </div>
+
           <div className="flex flex-col gap-2">
             <Label>Avatar</Label>
             <div className="grid grid-cols-6 gap-2">
@@ -139,7 +160,10 @@ export function EditProfileSheet(props: {
         </div>
 
         <SheetFooter>
-          <Button onClick={onSave} disabled={submitting}>
+          <Button
+            onClick={onSave}
+            disabled={submitting || !validUsername || status === "unavailable"}
+          >
             {submitting && <Loader2 className="size-4 animate-spin" />}
             Save changes
           </Button>

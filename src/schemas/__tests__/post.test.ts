@@ -1,27 +1,54 @@
 import { describe, it, expect } from "vitest";
-import { createPostSchema, topicLabel, TOPICS, topicValues } from "../post";
+import { createPostSchema, POST_CONTENT_MAX, topicLabel, TOPICS, topicValues } from "../post";
 
 describe("createPostSchema", () => {
-  it("accepts valid content and topic", () => {
+  it("accepts valid content and topics", () => {
     const result = createPostSchema.safeParse({
       content: "This is a valid post with enough characters.",
-      topic: "STRESS",
+      topics: ["STRESS"],
     });
     expect(result.success).toBe(true);
+  });
+
+  it("accepts multiple topics and dedupes them", () => {
+    const result = createPostSchema.safeParse({
+      content: "This is a valid post with enough characters.",
+      topics: ["STRESS", "ANXIETY", "STRESS"],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.topics).toEqual(["STRESS", "ANXIETY"]);
+    }
+  });
+
+  it("rejects an empty topics list", () => {
+    const result = createPostSchema.safeParse({
+      content: "This is a valid post with enough characters.",
+      topics: [],
+    });
+    expect(result.success).toBe(false);
   });
 
   it("rejects short content", () => {
     const result = createPostSchema.safeParse({
       content: "Short",
-      topic: "STRESS",
+      topics: ["STRESS"],
     });
     expect(result.success).toBe(false);
   });
 
-  it("rejects content over 1000 characters", () => {
+  it("accepts long content up to the technical ceiling", () => {
     const result = createPostSchema.safeParse({
-      content: "a".repeat(1001),
-      topic: "STRESS",
+      content: "a".repeat(POST_CONTENT_MAX),
+      topics: ["STRESS"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects content over the technical ceiling", () => {
+    const result = createPostSchema.safeParse({
+      content: "a".repeat(POST_CONTENT_MAX + 1),
+      topics: ["STRESS"],
     });
     expect(result.success).toBe(false);
   });
@@ -29,7 +56,7 @@ describe("createPostSchema", () => {
   it("rejects invalid topic", () => {
     const result = createPostSchema.safeParse({
       content: "This is a valid post with enough characters.",
-      topic: "INVALID_TOPIC",
+      topics: ["INVALID_TOPIC"],
     });
     expect(result.success).toBe(false);
   });
@@ -38,7 +65,7 @@ describe("createPostSchema", () => {
     for (const topic of topicValues) {
       const result = createPostSchema.safeParse({
         content: "This is a valid post with enough characters.",
-        topic,
+        topics: [topic],
       });
       expect(result.success).toBe(true);
     }
@@ -47,7 +74,7 @@ describe("createPostSchema", () => {
   it("trims content (handled by caller after parse)", () => {
     const result = createPostSchema.safeParse({
       content: "  This is a valid post with enough characters.  ",
-      topic: "STRESS",
+      topics: ["STRESS"],
     });
     expect(result.success).toBe(true);
     if (result.success) {

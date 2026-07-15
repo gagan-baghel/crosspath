@@ -1,14 +1,50 @@
 "use server";
 
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth, signOut } from "@/auth";
-import { onboardingSchema, editProfileSchema } from "@/schemas/profile";
-import { generateUsername } from "@/lib/usernames";
+import { onboardingSchema, editProfileSchema, usernameSchema } from "@/schemas/profile";
+import { rateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 type ActionResult<T = undefined> =
   | { success: true; data?: T }
   | { success: false; error: string };
+
+/** Case-insensitive lookup: is this username taken by someone other than `userId`? */
+async function usernameTaken(username: string, userId: string): Promise<boolean> {
+  const existing = await prisma.profile.findFirst({
+    where: { username: { equals: username, mode: "insensitive" } },
+    select: { userId: true },
+  });
+  return existing !== null && existing.userId !== userId;
+}
+
+/** Per-IP rate limit for availability checks: 30 per minute. */
+const USERNAME_CHECK_LIMIT = 30;
+const USERNAME_CHECK_WINDOW_MS = 60_000;
+
+/** Live availability check used while the user types their username. */
+export async function checkUsernameAvailable(
+  input: unknown
+): Promise<{ available: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { available: false, error: "Not authenticated" };
+
+  const h = await headers();
+  const ip = getClientIdentifier(h, "unknown");
+  if (!rateLimit(`username-check:${ip}`, USERNAME_CHECK_LIMIT, USERNAME_CHECK_WINDOW_MS).allowed) {
+    return { available: false, error: "Too many checks. Slow down a little." };
+  }
+
+  const parsed = usernameSchema.safeParse(input);
+  if (!parsed.success) {
+    return { available: false, error: parsed.error.issues[0]?.message ?? "Invalid username" };
+  }
+
+  const taken = await usernameTaken(parsed.data, session.user.id);
+  return taken ? { available: false, error: "That username is already taken" } : { available: true };
+}
 
 export async function completeOnboarding(input: unknown): Promise<ActionResult> {
   const session = await auth();
@@ -22,20 +58,10 @@ export async function completeOnboarding(input: unknown): Promise<ActionResult> 
   const existing = await prisma.profile.findUnique({ where: { userId: session.user.id } });
   if (existing?.onboarded) return { success: true };
 
-  let { username } = parsed.data;
-  // Regenerate on the rare collision instead of failing onboarding.
-  let found = false;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const taken = await prisma.profile.findUnique({ where: { username } });
-    if (!taken) {
-      found = true;
-      break;
-    }
-    username = generateUsername();
-  }
-
-  if (!found) {
-    return { success: false, error: "Unable to generate a unique username. Please try again." };
+  const { username } = parsed.data;
+  // The user chose this name, so a collision is their call to fix — no silent regeneration.
+  if (await usernameTaken(username, session.user.id)) {
+    return { success: false, error: "That username is already taken. Try another one." };
   }
 
   await prisma.profile.upsert({
@@ -69,9 +95,14 @@ export async function updateProfile(input: unknown): Promise<ActionResult> {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
+  if (await usernameTaken(parsed.data.username, session.user.id)) {
+    return { success: false, error: "That username is already taken. Try another one." };
+  }
+
   await prisma.profile.update({
     where: { userId: session.user.id },
     data: {
+      username: parsed.data.username,
       avatarUrl: parsed.data.avatarUrl,
       bio: parsed.data.bio,
       language: parsed.data.language,

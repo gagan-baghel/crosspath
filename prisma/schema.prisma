@@ -108,7 +108,7 @@ model Post {
   id            String     @id @default(auto()) @map("_id") @db.ObjectId
   authorId      String     @db.ObjectId
   content       String
-  topic         Topic
+  topics        Topic[]
   status        PostStatus @default(ACTIVE)
   interestCount Int        @default(0)
   createdAt     DateTime   @default(now())
@@ -118,7 +118,7 @@ model Post {
   chats     Chat[]
 
   @@index([status, createdAt(sort: Desc)])
-  @@index([topic, status, createdAt(sort: Desc)])
+  @@index([topics, status, createdAt(sort: Desc)])
   @@index([authorId, status])
 }
 

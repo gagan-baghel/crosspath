@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
           ? { authorId: { notIn: excluded } }
           : {}),
       ...(topic && topicValues.includes(topic as TopicValue)
-        ? { topic: topic as TopicValue }
+        ? { topics: { has: topic as TopicValue } }
         : {}),
       ...(q ? { content: { contains: q, mode: "insensitive" } } : {}),
     },
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
       id: true,
       authorId: true,
       content: true,
-      topic: true,
+      topics: true,
       createdAt: true,
       interestCount: true,
       interests: {
@@ -78,27 +78,37 @@ export async function GET(req: NextRequest) {
 
   // Author profiles fetched separately with the public-only selection.
   const authorIds = [...new Set(page.map((p) => p.authorId))];
-  const profiles = await prisma.profile.findMany({
-    where: { userId: { in: authorIds } },
-    select: {
-      userId: true,
-      username: true,
-      avatarUrl: true,
-      positiveCount: true,
-      negativeCount: true,
-    },
-  });
+  const [profiles, viewerChats] = await Promise.all([
+    prisma.profile.findMany({
+      where: { userId: { in: authorIds } },
+      select: {
+        userId: true,
+        username: true,
+        avatarUrl: true,
+        positiveCount: true,
+        negativeCount: true,
+      },
+    }),
+    // Chats where the viewer was picked by an author on these posts, so the
+    // card can link straight to the conversation.
+    prisma.chat.findMany({
+      where: { postId: { in: page.map((p) => p.id) }, partnerId: viewerId },
+      select: { id: true, postId: true },
+    }),
+  ]);
   const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+  const chatMap = new Map(viewerChats.map((c) => [c.postId, c.id]));
 
   const feedPosts: FeedPost[] = page
     .filter((p) => profileMap.has(p.authorId))
     .map((p) => ({
       id: p.id,
       content: p.content,
-      topic: p.topic,
+      topics: p.topics,
       createdAt: p.createdAt.toISOString(),
       interestCount: p.interestCount,
       viewerInterested: p.interests.length > 0,
+      viewerChatId: chatMap.get(p.id) ?? null,
       isOwn: p.authorId === viewerId,
       author: profileMap.get(p.authorId)!,
     }));

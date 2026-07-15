@@ -6,13 +6,14 @@ import { FeedList } from "@/components/feed/feed-list";
 import { TopBar } from "@/components/shell/top-bar";
 import { Button } from "@/components/ui/button";
 
-export function MyPostsScreen() {
+export function MyPostsScreen({ suggestions }: { suggestions?: React.ReactNode }) {
   const openCreatePost = useCreatePost((s) => s.open);
 
   return (
     <>
       <TopBar title="My Posts" />
-      <div className="p-4">
+      <div className="flex flex-col gap-4 p-4">
+        {suggestions}
         <FeedList
           mine
           emptyState={

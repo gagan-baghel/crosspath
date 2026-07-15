@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatDistanceToNowStrict } from "date-fns";
-import { Users } from "lucide-react";
+import { MessageCircle, Users } from "lucide-react";
 import { OwnPostMenu } from "@/components/feed/own-post-menu";
 import type { FeedPost } from "@/types/feed";
 import { topicLabel } from "@/schemas/post";
@@ -45,9 +45,13 @@ export function PostCard({ post, detail = false }: { post: FeedPost; detail?: bo
               {formatDistanceToNowStrict(new Date(post.createdAt), { addSuffix: true })}
             </span>
           </div>
-          <Badge variant="outline" className="ml-auto shrink-0 rounded-full font-normal">
-            {topicLabel(post.topic)}
-          </Badge>
+          <div className="ml-auto flex shrink-0 max-w-[45%] flex-wrap justify-end gap-1">
+            {post.topics.map((t) => (
+              <Badge key={t} variant="outline" className="rounded-full font-normal">
+                {topicLabel(t)}
+              </Badge>
+            ))}
+          </div>
           {post.isOwn && <OwnPostMenu postId={post.id} />}
         </div>
 
@@ -73,10 +77,22 @@ export function PostCard({ post, detail = false }: { post: FeedPost; detail?: bo
 
         <div className="flex items-center justify-between border-t pt-3">
           {post.isOwn ? (
-            <Button variant="outline" size="sm" className="rounded-full" asChild>
+            <Button
+              variant={post.interestCount > 0 ? "default" : "outline"}
+              size="sm"
+              className="rounded-full"
+              asChild
+            >
               <Link href={`/posts/${post.id}/interested`}>
                 <Users className="size-4" />
                 View interested ({post.interestCount})
+              </Link>
+            </Button>
+          ) : post.viewerChatId ? (
+            <Button size="sm" className="rounded-full" asChild>
+              <Link href={`/chats/${post.viewerChatId}`}>
+                <MessageCircle className="size-4" />
+                Open chat
               </Link>
             </Button>
           ) : (

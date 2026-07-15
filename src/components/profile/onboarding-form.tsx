@@ -3,11 +3,12 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Dices, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { completeOnboarding } from "@/actions/profile";
 import { avatarVariants } from "@/lib/avatars";
-import { LANGUAGES } from "@/schemas/profile";
+import { LANGUAGES, usernameSchema } from "@/schemas/profile";
+import { UsernameField, useUsernameAvailability } from "@/components/profile/username-field";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,22 +24,26 @@ import {
 
 const BIO_MAX = 160;
 
-export function OnboardingForm({ usernameCandidates }: { usernameCandidates: string[] }) {
+export function OnboardingForm({ initialUsername }: { initialUsername: string }) {
   const router = useRouter();
-  const [usernameIndex, setUsernameIndex] = useState(0);
+  const [username, setUsername] = useState(initialUsername);
   const [avatarIndex, setAvatarIndex] = useState(0);
   const [bio, setBio] = useState("");
   const [language, setLanguage] = useState<string>("English");
   const [submitting, setSubmitting] = useState(false);
 
-  const username = usernameCandidates[usernameIndex % usernameCandidates.length];
-  const avatars = useMemo(() => avatarVariants(username), [username]);
+  const { status, message } = useUsernameAvailability(username);
+  const validUsername = usernameSchema.safeParse(username.trim()).success;
+  const avatars = useMemo(
+    () => avatarVariants(username.trim() || "anonymous"),
+    [username]
+  );
 
   async function onSubmit() {
     setSubmitting(true);
     try {
       const result = await completeOnboarding({
-        username,
+        username: username.trim(),
         avatarUrl: avatars[avatarIndex],
         bio,
         language,
@@ -61,24 +66,13 @@ export function OnboardingForm({ usernameCandidates }: { usernameCandidates: str
       <CardContent className="flex flex-col gap-6 pt-6">
         {/* Username */}
         <div className="flex flex-col gap-2">
-          <Label>Your anonymous username</Label>
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 flex-1 items-center rounded-lg border bg-muted/40 px-3 font-medium">
-              {username}
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label="Regenerate username"
-              onClick={() => setUsernameIndex((i) => i + 1)}
-            >
-              <Dices className="size-4" />
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Usernames are generated to protect your identity.
-          </p>
+          <Label htmlFor="username">Choose your anonymous username</Label>
+          <UsernameField
+            value={username}
+            onChange={setUsername}
+            status={status}
+            message={message}
+          />
         </div>
 
         {/* Avatar */}
@@ -139,7 +133,12 @@ export function OnboardingForm({ usernameCandidates }: { usernameCandidates: str
           </Select>
         </div>
 
-        <Button onClick={onSubmit} disabled={submitting} className="w-full" size="lg">
+        <Button
+          onClick={onSubmit}
+          disabled={submitting || !validUsername || status === "unavailable"}
+          className="w-full"
+          size="lg"
+        >
           {submitting && <Loader2 className="size-4 animate-spin" />}
           Enter Relate
         </Button>

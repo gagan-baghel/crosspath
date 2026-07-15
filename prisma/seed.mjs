@@ -26,25 +26,25 @@ const demoUsers = [
 const demoPosts = [
   {
     email: "demo1@relate.local",
-    topic: "CAREER",
+    topics: ["CAREER"],
     content:
       "I've been at the same job for four years and I feel completely stuck. Everyone around me seems to be moving up or moving on, and I'm scared that if I leave I'll fail, but staying feels like slowly giving up. Has anyone made a big change like this after feeling frozen for years?",
   },
   {
     email: "demo2@relate.local",
-    topic: "LONELINESS",
+    topics: ["LONELINESS"],
     content:
       "Moved to a new city six months ago for work. I still haven't made a single real friend here. Weekends are the hardest — I just walk around alone. I'm not sad exactly, just... invisible.",
   },
   {
     email: "demo2@relate.local",
-    topic: "FAMILY",
+    topics: ["FAMILY"],
     content:
       "My parents still treat me like a child even though I'm 26 and support myself. Every phone call turns into criticism about my choices. I love them but I dread calling home.",
   },
   {
     email: "demo3@relate.local",
-    topic: "ANXIETY",
+    topics: ["ANXIETY", "CAREER"],
     content:
       "Job interview next week and my anxiety is through the roof. I keep imagining every way it could go wrong. I know it's irrational but knowing that doesn't stop the 3am spirals.",
   },
@@ -85,9 +85,9 @@ async function main() {
     });
     if (!existing) {
       await prisma.post.create({
-        data: { authorId: user.id, topic: p.topic, content: p.content },
+        data: { authorId: user.id, topics: p.topics, content: p.content },
       });
-      console.log(`✓ post [${p.topic}] by ${p.email}`);
+      console.log(`✓ post [${p.topics}] by ${p.email}`);
     }
   }
 

@@ -25,7 +25,7 @@ export default async function PostDetailPage({
       id: true,
       authorId: true,
       content: true,
-      topic: true,
+      topics: true,
       createdAt: true,
       interestCount: true,
       status: true,
@@ -38,25 +38,32 @@ export default async function PostDetailPage({
     notFound();
   }
 
-  const authorProfile = await prisma.profile.findUnique({
-    where: { userId: post.authorId },
-    select: {
-      userId: true,
-      username: true,
-      avatarUrl: true,
-      positiveCount: true,
-      negativeCount: true,
-    },
-  });
+  const [authorProfile, viewerChat] = await Promise.all([
+    prisma.profile.findUnique({
+      where: { userId: post.authorId },
+      select: {
+        userId: true,
+        username: true,
+        avatarUrl: true,
+        positiveCount: true,
+        negativeCount: true,
+      },
+    }),
+    prisma.chat.findUnique({
+      where: { postId_partnerId: { postId: post.id, partnerId: viewerId } },
+      select: { id: true },
+    }),
+  ]);
   if (!authorProfile) notFound();
 
   const feedPost: FeedPost = {
     id: post.id,
     content: post.content,
-    topic: post.topic,
+    topics: post.topics,
     createdAt: post.createdAt.toISOString(),
     interestCount: post.interestCount,
     viewerInterested: post.interests.length > 0,
+    viewerChatId: viewerChat?.id ?? null,
     isOwn: post.authorId === viewerId,
     author: authorProfile,
   };

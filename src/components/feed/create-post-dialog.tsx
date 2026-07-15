@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createPost } from "@/actions/posts";
-import { TOPICS, type TopicValue } from "@/schemas/post";
+import { POST_CONTENT_MAX, TOPICS, type TopicValue } from "@/schemas/post";
 import { useCreatePost } from "@/stores/create-post";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,23 +19,28 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-const CONTENT_MAX = 1000;
 const CONTENT_MIN = 10;
 
 export function CreatePostDialog() {
   const { isOpen, close } = useCreatePost();
   const queryClient = useQueryClient();
-  const [topic, setTopic] = useState<TopicValue | null>(null);
+  const [topics, setTopics] = useState<TopicValue[]>([]);
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const valid = topic !== null && content.trim().length >= CONTENT_MIN;
+  const valid = topics.length > 0 && content.trim().length >= CONTENT_MIN;
+
+  function toggleTopic(value: TopicValue) {
+    setTopics((prev) =>
+      prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
+    );
+  }
 
   async function onSubmit() {
-    if (!topic) return;
+    if (topics.length === 0) return;
     setSubmitting(true);
     try {
-      const result = await createPost({ content, topic });
+      const result = await createPost({ content, topics });
       if (!result.success) {
         toast.error(result.error);
         setSubmitting(false);
@@ -44,7 +49,7 @@ export function CreatePostDialog() {
       toast.success("Shared with the community");
       setSubmitting(false);
       setContent("");
-      setTopic(null);
+      setTopics([]);
       close();
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     } catch {
@@ -62,37 +67,44 @@ export function CreatePostDialog() {
         </DialogHeader>
 
         <div className="flex flex-wrap gap-2">
-          {TOPICS.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              onClick={() => setTopic(topic === t.value ? null : t.value)}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-sm transition-colors",
-                topic === t.value
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
+          {TOPICS.map((t) => {
+            const selected = topics.includes(t.value);
+            return (
+              <button
+                key={t.value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => toggleTopic(t.value)}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                  selected
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex flex-1 flex-col gap-1.5 sm:flex-none">
           <Textarea
             value={content}
-            maxLength={CONTENT_MAX}
+            maxLength={POST_CONTENT_MAX}
             onChange={(e) => setContent(e.target.value)}
             placeholder="What are you going through?"
             className="min-h-40 flex-1 resize-none text-[15px] sm:flex-none"
             autoFocus
           />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{topic ? "" : "Pick a topic above"}</span>
-            <span>
-              {content.length}/{CONTENT_MAX}
-            </span>
+            <span>{topics.length === 0 ? "Pick one or more topics above" : ""}</span>
+            {/* Only surface the technical ceiling once it's within reach. */}
+            {content.length >= POST_CONTENT_MAX - 500 && (
+              <span>
+                {content.length.toLocaleString()}/{POST_CONTENT_MAX.toLocaleString()}
+              </span>
+            )}
           </div>
         </div>
 

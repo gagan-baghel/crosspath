@@ -243,10 +243,31 @@ export function ChatRoom({
       }
     };
 
-    const interval = setInterval(poll, 2500);
+    // Poll only while the tab is visible; catch up immediately on return.
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      if (!interval) interval = setInterval(poll, 2500);
+    };
+    const stop = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        poll();
+        start();
+      } else {
+        stop();
+      }
+    };
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       active = false;
-      clearInterval(interval);
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [client, ended, chatId, viewerId, isNearBottom, scrollToBottom]);
 

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -11,11 +12,13 @@ export async function requireUserId(): Promise<string> {
 
 /**
  * Returns the user's onboarded profile, redirecting to /onboarding when
- * missing. Used by every page inside the authed app shell.
+ * missing. Used by every page inside the authed app shell. Wrapped in
+ * React cache() so layout + page calling it in one request share a
+ * single DB query.
  */
-export async function requireProfile() {
+export const requireProfile = cache(async () => {
   const userId = await requireUserId();
   const profile = await prisma.profile.findUnique({ where: { userId } });
   if (!profile?.onboarded) redirect("/onboarding");
   return profile;
-}
+});

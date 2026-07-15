@@ -188,7 +188,7 @@ export default function LandingPage() {
                   key={p}
                   className="relative size-10 overflow-hidden rounded-full border-2 border-background bg-muted"
                 >
-                  <Image src={img(p, 120)} alt="" fill unoptimized className="object-cover" sizes="40px" />
+                  <Image src={img(p, 120)} alt="" fill priority className="object-cover" sizes="40px" />
                 </span>
               ))}
             </div>
@@ -272,7 +272,6 @@ export default function LandingPage() {
                   src={img(portrait, 500)}
                   alt=""
                   fill
-                  unoptimized
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                   sizes="(max-width: 640px) 33vw, 220px"
                 />
@@ -304,7 +303,6 @@ export default function LandingPage() {
                   src={img(id, 700)}
                   alt=""
                   fill
-                  unoptimized
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 360px"
                 />
@@ -346,7 +344,7 @@ export default function LandingPage() {
               </blockquote>
               <figcaption className="flex items-center gap-3">
                 <span className="relative size-10 overflow-hidden rounded-full bg-muted">
-                  <Image src={img(portrait, 120)} alt="" fill unoptimized className="object-cover" sizes="40px" />
+                  <Image src={img(portrait, 120)} alt="" fill className="object-cover" sizes="40px" />
                 </span>
                 <div className="leading-tight">
                   <p className="text-sm font-medium">{name}</p>
@@ -366,7 +364,6 @@ export default function LandingPage() {
               src={img("1516302752625-fcc3c50ae61f", 900)}
               alt=""
               fill
-              unoptimized
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 500px"
             />
@@ -402,7 +399,6 @@ export default function LandingPage() {
             src={img("1521791136064-7986c2920216", 1400)}
             alt=""
             fill
-            unoptimized
             className="object-cover object-center"
             sizes="(max-width: 1152px) 100vw, 1088px"
           />

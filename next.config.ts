@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "api.dicebear.com" },
     ],
+    formats: ["image/avif", "image/webp"],
+  },
+  experimental: {
+    // Reuse a visited page's RSC payload for 30s so switching back to a
+    // tab renders instantly instead of re-running the server render.
+    staleTimes: { dynamic: 30 },
   },
   // Strict CSP that allows self + DiceBear + Ably + Vercel + Unsplash
   async headers() {

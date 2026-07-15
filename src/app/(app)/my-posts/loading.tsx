@@ -1,0 +1,17 @@
+import { PostSkeleton } from "@/components/feed/post-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function MyPostsLoading() {
+  return (
+    <>
+      <div className="flex h-14 items-center border-b px-4">
+        <Skeleton className="h-5 w-24" />
+      </div>
+      <div className="flex flex-col gap-3 p-4">
+        <PostSkeleton />
+        <PostSkeleton />
+        <PostSkeleton />
+      </div>
+    </>
+  );
+}

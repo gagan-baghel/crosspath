@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -25,7 +24,6 @@ import {
 const BIO_MAX = 160;
 
 export function OnboardingForm({ initialUsername }: { initialUsername: string }) {
-  const router = useRouter();
   const [username, setUsername] = useState(initialUsername);
   const [avatarIndex, setAvatarIndex] = useState(0);
   const [bio, setBio] = useState("");
@@ -53,8 +51,10 @@ export function OnboardingForm({ initialUsername }: { initialUsername: string })
         setSubmitting(false);
         return;
       }
-      router.push("/feed");
-      router.refresh();
+      // Full navigation so /feed renders fresh against the now-onboarded
+      // profile — router.push would hit the client cache entry from when
+      // /feed still redirected back here, stranding the user on this screen.
+      window.location.assign("/feed");
     } catch {
       toast.error("Something went wrong. Please try again.");
       setSubmitting(false);

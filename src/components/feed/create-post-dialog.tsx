@@ -72,7 +72,7 @@ export function CreatePostDialog() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-      <DialogContent className="flex h-dvh max-w-full flex-col gap-4 rounded-none p-4 sm:h-auto sm:max-w-lg sm:rounded-2xl sm:p-6">
+      <DialogContent className="flex h-dvh max-w-full flex-col gap-4 rounded-none p-4 sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:max-w-lg sm:rounded-2xl sm:p-6">
         <DialogHeader className="text-left">
           <DialogTitle>Share what&apos;s on your mind</DialogTitle>
           <DialogDescription>Be honest. You&apos;re anonymous.</DialogDescription>
@@ -112,13 +112,13 @@ export function CreatePostDialog() {
           </div>
         )}
 
-        <div className="flex flex-1 flex-col gap-1.5 sm:flex-none">
+        <div className="flex min-h-0 flex-1 flex-col gap-1.5">
           <Textarea
             value={content}
             maxLength={POST_CONTENT_MAX}
             onChange={(e) => setContent(e.target.value)}
             placeholder="What are you going through?"
-            className="min-h-40 flex-1 resize-none text-[15px] sm:flex-none"
+            className="min-h-40 flex-1 resize-none overflow-y-auto text-[15px]"
             autoFocus
           />
           <div className="flex justify-between text-xs text-muted-foreground">

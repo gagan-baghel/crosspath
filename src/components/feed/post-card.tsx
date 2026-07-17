@@ -58,7 +58,7 @@ export function PostCard({ post, detail = false }: { post: FeedPost; detail?: bo
         <Link href={`/posts/${post.id}`} className="group">
           <p
             className={cn(
-              "whitespace-pre-wrap text-[15px] leading-relaxed",
+              "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
               clampable && !expanded && "line-clamp-6"
             )}
           >
